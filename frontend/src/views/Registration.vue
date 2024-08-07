@@ -1,5 +1,45 @@
 <template>
-  <!-- Template remains the same -->
+  <v-container
+    class="d-flex align-center justify-center"
+    style="min-height: 100vh"
+  >
+    <v-row class="d-flex align-center justify-center fill-height">
+      <v-col cols="15" md="9" lg="6">
+        <h1 class="heading">Create Your Account</h1>
+        <v-card class="card">
+          <v-form @submit.prevent="handleSubmit">
+            <v-text-field
+              v-model="name"
+              label="Name"
+              :error-messages="nameError"
+              class="text-field"
+            ></v-text-field>
+            <v-text-field
+              v-model="email"
+              label="Email"
+              :error-messages="emailError"
+              class="text-field"
+            ></v-text-field>
+            <v-text-field
+              v-model="password"
+              label="Password"
+              type="password"
+              :error-messages="passwordError"
+              class="text-field"
+            ></v-text-field>
+            <v-row justify="center" class="mt-4">
+              <v-col cols="auto">
+                <v-btn type="submit" class="signup">Sign Up</v-btn>
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card>
+        <v-alert v-if="successMessage" type="success">{{
+          successMessage
+        }}</v-alert>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup>
@@ -78,5 +118,37 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-/* Styles remain the same */
+.heading {
+  font-weight: bold;
+  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.v-btn.primary {
+  background-color: #067796;
+  color: white;
+}
+
+.v-btn.primary:hover {
+  background-color: #09397d;
+}
+
+.text-field {
+  margin-top: 22px;
+  margin-left: 20px;
+  margin-right: 20px;
+  color: purple;
+}
+
+.signup {
+  margin-bottom: 10px;
+  background-color: #067796;
+  color: white;
+}
+
+.card {
+  background-color: #c7e2ea;
+}
 </style>
