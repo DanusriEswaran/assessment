@@ -10,7 +10,8 @@
       <input v-model="task.name" />
 
       <label>Description:</label>
-      <input v-model="task.desc" />
+      <input v-model="task.description" />
+      <!-- <input v-model="task.desc" /> -->
 
       <label>Task Date:</label>
       <input type="date" v-model="task.date" />
@@ -35,7 +36,8 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref } from "vue";
+//import { defineProps, defineEmits, ref } from "vue";
+import { defineProps, defineEmits, ref, watch } from "vue";
 import axios from "axios";
 
 const props = defineProps({
@@ -50,13 +52,23 @@ const categories = [
   { text: "Teaching", value: "Teaching" },
 ];
 
-const task = ref({
-  id: "",
-  name: "",
-  desc: "",
-  date: "", // Ensure this is formatted correctly
-  category: "",
-});
+// const task = ref({
+//   id: "",
+//   name: "",
+//   desc: "",
+//   date: "",
+//   category: "",
+// });
+
+const task = ref({ ...props.task });
+
+watch(
+  () => props.task,
+  (newTask) => {
+    task.value = { ...newTask };
+  },
+  { immediate: true }
+);
 
 function validateForm() {
   let isValid = true;
@@ -66,11 +78,15 @@ function validateForm() {
     console.error("Name is required.");
   }
 
-  if (!task.value.desc) {
-    isValid = false;
-    console.error("Description is required.");
-  }
+  // if (!task.value.desc) {
+  //   isValid = false;
+  //   console.error("Description is required.");
+  // }
 
+  if (!task.value.description) {
+    isValid = false;
+    console.error("Description is required");
+  }
   if (!task.value.date) {
     isValid = false;
     console.error("Task date is required.");
@@ -84,6 +100,18 @@ function validateForm() {
   return isValid;
 }
 
+function formatDate(date) {
+  const d = new Date(date);
+  let mon = "" + (d.getMonth() + 1);
+  let day = "" + d.getDate();
+  const year = d.getFullYear();
+
+  if (mon.length < 2) mon = "0" + mon;
+  if (day.length < 2) day = "0" + day;
+
+  return [year, mon, day].join("-");
+}
+
 async function submitForm() {
   if (validateForm()) {
     try {
@@ -94,8 +122,13 @@ async function submitForm() {
           Authorization: `Bearer ${token}`,
         },
       };
+      const taskData = {
+        ...task.value,
+        date: formatDate(task.value.date),
+      };
+
       if (task.value.id) {
-        await axios.put(`${apiUrl}/tasks/${task.value.id}`, task.value, config);
+        await axios.put(`${apiUrl}/tasks/${task.value.id}`, taskData, config);
       } else {
         await axios.post(`${apiUrl}/tasks`, task.value, config);
       }

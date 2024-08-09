@@ -15,13 +15,16 @@ export default class Task extends BaseModel {
   public name: string;
 
   @column()
-  public description: string;
+  public description?: string;
 
   @column()
   public date: string;
 
   @column()
   public category: string;
+
+  @column()
+  public status: string;
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public createdat: DateTime;

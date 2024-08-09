@@ -22,6 +22,13 @@
               :error-messages="passwordError"
               class="text-field"
             ></v-text-field>
+            <v-select
+              v-model="role"
+              :items="['user', 'admin']"
+              label="Select Role"
+              class="text-field"
+            ></v-select>
+
             <v-btn type="submit" class="signup">Login</v-btn>
           </v-form>
           <p class="signup-text">
@@ -47,6 +54,7 @@ const url = import.meta.env.VITE_APP_URL;
 
 const email = ref("");
 const password = ref("");
+const role = ref("user");
 const router = useRouter();
 const emailError = ref("");
 const passwordError = ref("");
@@ -76,9 +84,14 @@ function validate() {
 
 async function handleLogin() {
   if (validate()) {
+    console.log(url);
     try {
-      console.log("Sending login request to:", `${url}/login`);
-      const response = await axios.post(`${url}/login`, {
+      // Determine the login URL based on the role
+      const loginUrl =
+        role.value === "admin" ? `${url}/admin/login` : `${url}/user/login`;
+
+      console.log("Sending login request to:", loginUrl);
+      const response = await axios.post(loginUrl, {
         email: email.value,
         password: password.value,
       });
@@ -86,23 +99,24 @@ async function handleLogin() {
       console.log("Login response:", response);
 
       const token = response.data.token;
-      localStorage.setItem("authToken", token);
+      console.log(token);
+      localStorage.setItem("authToken", token.token); // Store token under 'authToken'
+      console.log(token.token);
 
       successMessage.value = "Account logged in successfully!";
-      setTimeout(() => {
-        router.push({ name: "home" });
-      }, 1000);
+
+      // Redirect based on role
+      if (role.value === "admin") {
+        router.push("/admintask");
+      } else {
+        router.push("/home");
+      }
     } catch (error) {
-      console.error("Error during login:", error);
-
       if (error.response) {
-        console.error("Error response data:", error.response.data);
-        console.error("Error response status:", error.response.status);
-
         if (error.response.data && error.response.data.message) {
           emailError.value = error.response.data.message;
         } else {
-          emailError.value = "An error occurred. Please try again.";
+          emailError.value = "error in the email.";
         }
       } else {
         emailError.value = "An error occurred. Please try again.";

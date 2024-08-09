@@ -27,11 +27,11 @@ export default class Tasks extends BaseSchema {
         .foreign("userid")
         .references("id")
         .inTable("users")
-        .onDelete("CASCADE"); // Ensures referential integrity
+        .onDelete("CASCADE");
     });
   }
 
   public async down() {
-    this.schema.dropTable(this.tableName); // Drop table if rolling back
+    this.schema.dropTable(this.tableName);
   }
 }
