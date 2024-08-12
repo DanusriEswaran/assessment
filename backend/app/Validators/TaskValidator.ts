@@ -4,9 +4,7 @@ export default class TaskValidator {
   public schema = schema.create({
     name: schema.string({}, [rules.maxLength(255)]),
     description: schema.string.optional({}, [rules.maxLength(500)]),
-    date: schema.string({}, [
-      rules.regex(/^\d{4}-\d{2}-\d{2}$/), // Validate date format YYYY-MM-DD
-    ]),
+    date: schema.string({}, [rules.regex(/^\d{4}-\d{2}-\d{2}$/)]),
     category: schema.string({}, [rules.maxLength(50)]),
     status: schema.string({}, [rules.maxLength(20)]),
   });

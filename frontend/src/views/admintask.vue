@@ -66,12 +66,14 @@
                 :items="usersWithTasks"
                 :items-per-page="itemsPerPage"
               >
-                <template v-slot:item.tasks="{ item }">
+                <template v-slot:item="{ item }">
                   <v-list>
                     <v-list-item-group v-if="item.tasks && item.tasks.length">
                       <v-list-item v-for="task in item.tasks" :key="task.id">
                         <v-list-item-content>
-                          <v-list-item-title>{{ task.name }}</v-list-item-title>
+                          <v-list-item-title>
+                            {{ item.username }} - {{ task.taskName }}
+                          </v-list-item-title>
                         </v-list-item-content>
                       </v-list-item>
                     </v-list-item-group>
@@ -287,6 +289,7 @@ const fetchUsers = async () => {
   }
 };
 
+//users and their tasks
 const fetchUserswithTask = async () => {
   try {
     const token = localStorage.getItem("authToken");
@@ -295,29 +298,22 @@ const fetchUserswithTask = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
-
+    console.log(response);
     if (response.status === 200) {
-      // Process the fetched users and their tasks
-      const usersMap = new Map();
-      response.data.forEach((user) => {
-        if (!usersMap.has(user.userId)) {
-          usersMap.set(user.userId, {
-            id: user.userId,
-            username: user.username,
-            tasks: [],
-          });
-        }
-        usersMap.get(user.userId).tasks.push({
-          id: user.taskId,
-          name: user.taskName,
-          description: user.taskDescription,
-          category: user.taskCategory,
-          status: user.taskStatus,
-          date: user.taskDate,
-        });
-      });
+      const usersWithTasks = response.data.map((user) => ({
+        id: user.userId,
+        username: user.username,
+        tasks: user.tasks.map((task) => ({
+          id: task.taskId,
+          name: task.taskName,
+          description: task.taskDescription,
+          category: task.taskCategory,
+          status: task.taskStatus,
+          date: task.taskDate,
+        })),
+      }));
+      usersWithTasks.value = usersWithTasks;
 
-      usersWithTasks.value = Array.from(usersMap.values());
       console.log("Fetched users with tasks:", usersWithTasks.value);
     }
   } catch (error) {

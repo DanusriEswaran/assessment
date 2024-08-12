@@ -40,6 +40,8 @@ export default class User extends BaseModel {
     }
   }
 
-  @hasMany(() => Task)
+  @hasMany(() => Task, {
+    foreignKey: "userid",
+  })
   public tasks: HasMany<typeof Task>;
 }

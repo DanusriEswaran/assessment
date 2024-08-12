@@ -1,11 +1,9 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Task from "App/Models/Task";
-import TaskValidator from "App/Validators/TaskValidator"; // Import the validator
+import TaskValidator from "App/Validators/TaskValidator";
 
 export default class TasksController {
-  /**
-   * Fetch all tasks for the authenticated user.
-   */
+  // Fetch all tasks
   public async fetch({ auth, response }: HttpContextContract) {
     try {
       const user = await auth.authenticate();

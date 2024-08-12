@@ -32,6 +32,6 @@ export default class Task extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedat: DateTime;
 
-  @belongsTo(() => User)
+  @belongsTo(() => User, { foreignKey: "userid" })
   public user: BelongsTo<typeof User>;
 }
