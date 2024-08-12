@@ -33,19 +33,12 @@
               </v-col>
             </v-row>
           </v-form>
-<<<<<<< HEAD
           <v-alert v-if="successMessage" type="success">{{
             successMessage
           }}</v-alert>
           <v-alert v-if="generalError" type="error">{{ generalError }}</v-alert>
         </v-card>
         <p class="info-text">Only users can register their accounts.</p>
-=======
-        </v-card>
-        <v-alert v-if="successMessage" type="success">{{
-          successMessage
-        }}</v-alert>
->>>>>>> 2877f4952174224c932d7d5e8f13930994d399e8
       </v-col>
     </v-row>
   </v-container>
@@ -165,7 +158,6 @@ async function handleSubmit() {
 .card {
   background-color: #c7e2ea;
 }
-<<<<<<< HEAD
 
 .info-text {
   text-align: center;
@@ -173,6 +165,4 @@ async function handleSubmit() {
   font-size: 0.875rem;
   color: #666;
 }
-=======
->>>>>>> 2877f4952174224c932d7d5e8f13930994d399e8
 </style>

@@ -35,10 +35,11 @@
             Don't have an account?
             <a href="#" @click.prevent="goToSignup">Sign up here</a>
           </p>
+
+          <v-alert v-if="successMessage" type="success" class="mt-4">{{
+            successMessage
+          }}</v-alert>
         </v-card>
-        <v-alert v-if="successMessage" type="success">{{
-          successMessage
-        }}</v-alert>
       </v-col>
     </v-row>
   </v-container>
@@ -84,7 +85,6 @@ function validate() {
 
 async function handleLogin() {
   if (validate()) {
-    console.log(url);
     try {
       // Determine the login URL based on the role
       const loginUrl =
@@ -99,18 +99,19 @@ async function handleLogin() {
       console.log("Login response:", response);
 
       const token = response.data.token;
-      console.log(token);
-      localStorage.setItem("authToken", token.token); // Store token under 'authToken'
+      localStorage.setItem("authToken", token.token);
       console.log(token.token);
 
       successMessage.value = "Account logged in successfully!";
 
-      // Redirect based on role
-      if (role.value === "admin") {
-        router.push("/admintask");
-      } else {
-        router.push("/home");
-      }
+      setTimeout(() => {
+        // Redirect based on role
+        if (role.value === "admin") {
+          router.push("/admintask");
+        } else {
+          router.push("/home");
+        }
+      }, 1000);
     } catch (error) {
       if (error.response) {
         if (error.response.data && error.response.data.message) {

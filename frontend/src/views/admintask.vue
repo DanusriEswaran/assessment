@@ -4,7 +4,7 @@
       <!-- Task Assignment -->
       <v-row>
         <v-col cols="12" md="6">
-          <v-card>
+          <v-card class="custom-card">
             <v-card-title>
               <h2>Assign Task</h2>
             </v-card-title>
@@ -56,7 +56,7 @@
 
         <!-- Users and Assigned Tasks Section -->
         <v-col cols="12" md="6">
-          <v-card>
+          <v-card class="custom-card">
             <v-card-title>
               <h2>Users and Their Tasks</h2>
             </v-card-title>
@@ -68,7 +68,6 @@
               >
                 <template v-slot:item.tasks="{ item }">
                   <v-list>
-                    <!-- Ensure item.tasks is defined and an array -->
                     <v-list-item-group v-if="item.tasks && item.tasks.length">
                       <v-list-item v-for="task in item.tasks" :key="task.id">
                         <v-list-item-content>
@@ -76,11 +75,6 @@
                         </v-list-item-content>
                       </v-list-item>
                     </v-list-item-group>
-                    <v-list-item v-else>
-                      <v-list-item-content
-                        >No tasks assigned</v-list-item-content
-                      >
-                    </v-list-item>
                   </v-list>
                 </template>
                 <!-- Pagination Controls -->
@@ -88,7 +82,7 @@
                   <v-pagination
                     v-model="pagination.page"
                     :length="pagination.totalPages"
-                    @input="fetchUsers"
+                    @input="fetchUserswithTask"
                   ></v-pagination>
                 </template>
               </v-data-table>
@@ -100,7 +94,7 @@
       <!-- Task Categorization Section -->
       <v-row>
         <v-col cols="12">
-          <v-card>
+          <v-card class="custom-card">
             <v-card-title>
               <h2>Tasks by Category</h2>
             </v-card-title>
@@ -122,6 +116,10 @@
                     {{ item.status }}
                   </v-chip>
                 </template>
+
+                <template v-slot:item.username="{ item }">
+                  {{ item.username }}
+                </template>
                 <!-- Pagination Controls -->
                 <template v-slot:footer>
                   <v-pagination
@@ -138,8 +136,8 @@
 
       <!-- Task Status Tracking Section -->
       <v-row>
-        <v-col cols="12">
-          <v-card>
+        <v-col cols="15">
+          <v-card class="custom-card">
             <v-card-title>
               <h2>Track Task Status</h2>
             </v-card-title>
@@ -241,6 +239,7 @@ const userHeaders = ref([
 ]);
 
 const taskHeaders = ref([
+  { text: "Username", value: "username" },
   { text: "Task Name", value: "name" },
   { text: "Description", value: "description" },
   { text: "Category", value: "category" },
@@ -250,8 +249,8 @@ const taskHeaders = ref([
 
 const statusOptions = ref(["In Progress", "Completed"]);
 const statusColors = ref({
-  "In Progress": "orange",
   Completed: "green",
+  "In Progress": "orange",
 });
 
 // Fetch authenticated user's tasks
@@ -288,9 +287,48 @@ const fetchUsers = async () => {
   }
 };
 
+const fetchUserswithTask = async () => {
+  try {
+    const token = localStorage.getItem("authToken");
+    const response = await axios.get("http://127.0.0.1:3333/admin/usertasks", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 200) {
+      // Process the fetched users and their tasks
+      const usersMap = new Map();
+      response.data.forEach((user) => {
+        if (!usersMap.has(user.userId)) {
+          usersMap.set(user.userId, {
+            id: user.userId,
+            username: user.username,
+            tasks: [],
+          });
+        }
+        usersMap.get(user.userId).tasks.push({
+          id: user.taskId,
+          name: user.taskName,
+          description: user.taskDescription,
+          category: user.taskCategory,
+          status: user.taskStatus,
+          date: user.taskDate,
+        });
+      });
+
+      usersWithTasks.value = Array.from(usersMap.values());
+      console.log("Fetched users with tasks:", usersWithTasks.value);
+    }
+  } catch (error) {
+    console.error("Error fetching users:", error);
+  }
+};
+
 // Lifecycle hooks
 onMounted(() => {
   fetchUsers();
+  fetchUserswithTask();
 });
 
 // Assign a task to a user
@@ -337,7 +375,14 @@ const assignTask = async () => {
   }
 };
 
-// Fetch tasks by category
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 const fetchCategorizedTasks = async () => {
   try {
     const token = localStorage.getItem("authToken");
@@ -354,9 +399,17 @@ const fetchCategorizedTasks = async () => {
         },
       }
     );
-
+    console.log("response from backend: ", response);
     if (response.status === 200) {
-      categorizedTasks.value = response.data;
+      console.log("say hi");
+      categorizedTasks.value = response.data.map((task) => ({
+        ...task,
+        date: formatDate(task.date),
+        username: task.username,
+      }));
+
+      console.log("Categorized tasks with usernames: ", categorizedTasks.value);
+
       // Update pagination info
       pagination.value.categoryTotalPages = Math.ceil(
         response.data.total / itemsPerPage
@@ -386,8 +439,11 @@ const fetchTasksByStatus = async () => {
     );
 
     if (response.status === 200) {
-      tasksByStatus.value = response.data;
-      // Update pagination info
+      tasksByStatus.value = response.data.map((task) => ({
+        ...task,
+        date: formatDate(task.date),
+        username: task.username,
+      }));
       pagination.value.statusTotalPages = Math.ceil(
         response.data.total / itemsPerPage
       );
@@ -417,6 +473,9 @@ watch(selectedStatus, fetchTasksByStatus);
 </script>
 
 <style scoped>
+.custom-card {
+  background-color: rgb(156, 221, 235);
+}
 .admin-dashboard {
   padding: 20px;
 }

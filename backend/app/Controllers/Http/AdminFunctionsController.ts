@@ -1,4 +1,3 @@
-// app/Controllers/Http/AdminFunctionsController.ts
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Task from "App/Models/Task";
 import Database from "@ioc:Adonis/Lucid/Database";
@@ -12,7 +11,7 @@ export default class AdminFunctionsController {
 
     try {
       const task = new Task();
-      task.userid = userid; // Using `userid` for the user reference
+      task.userid = userid;
       task.name = name;
       task.description = description || "";
       task.category = category;
@@ -27,7 +26,6 @@ export default class AdminFunctionsController {
 
   public async viewUsersWithTasks({ response }: HttpContextContract) {
     try {
-      // Fetch users with their tasks
       const usersWithTasks = await Database.from("users")
         .leftJoin("tasks", "users.id", "tasks.userid")
         .select(
@@ -53,19 +51,42 @@ export default class AdminFunctionsController {
   public async categorizeTasks({ request, response }: HttpContextContract) {
     const category = request.qs().category;
 
-    // Validate category
     const allowedCategories = ["meetings", "work", "teaching"];
     if (!allowedCategories.includes(category)) {
       return response.badRequest({ message: "Invalid category" });
     }
 
     try {
-      const tasks = await Task.query().where("category", category);
-      return response.ok(tasks);
+      // Fetch tasks and include the related user data
+      const tasks = await Database.from("tasks")
+        .innerJoin("users", "tasks.userid", "users.id")
+        .select(
+          "tasks.id as taskId",
+          "tasks.name as taskName",
+          "tasks.description as taskDescription",
+          "tasks.category as taskCategory",
+          "tasks.date as taskDate",
+          "tasks.status as taskStatus",
+          "users.username as userUsername"
+        )
+        .where("tasks.category", category);
+
+      // Format tasks to include username
+      const formattedTasks = tasks.map((task) => ({
+        id: task.taskId,
+        name: task.taskName,
+        description: task.taskDescription,
+        category: task.taskCategory,
+        date: task.taskDate,
+        status: task.taskStatus,
+        username: task.userUsername,
+      }));
+
+      return response.ok(formattedTasks);
     } catch (error) {
       return response.badRequest({
         message: "Error fetching tasks by category",
-        error,
+        error: error.message,
       });
     }
   }
@@ -73,19 +94,42 @@ export default class AdminFunctionsController {
   public async trackTaskStatus({ request, response }: HttpContextContract) {
     const status = request.qs().status;
 
-    // Validate status
     const allowedStatuses = ["In Progress", "Completed"];
     if (!allowedStatuses.includes(status)) {
       return response.badRequest({ message: "Invalid status" });
     }
 
     try {
-      const tasks = await Task.query().where("status", status);
-      return response.ok(tasks);
+      // Fetch tasks and include the related user data
+      const tasks = await Database.from("tasks")
+        .innerJoin("users", "tasks.userid", "users.id")
+        .select(
+          "tasks.id as taskId",
+          "tasks.name as taskName",
+          "tasks.description as taskDescription",
+          "tasks.category as taskCategory",
+          "tasks.date as taskDate",
+          "tasks.status as taskStatus",
+          "users.username as userUsername"
+        )
+        .where("tasks.status", status);
+
+      // Format tasks to include username
+      const formattedTasks = tasks.map((task) => ({
+        id: task.taskId,
+        name: task.taskName,
+        description: task.taskDescription,
+        category: task.taskCategory,
+        date: task.taskDate,
+        status: task.taskStatus,
+        username: task.userUsername,
+      }));
+
+      return response.ok(formattedTasks);
     } catch (error) {
       return response.badRequest({
         message: "Error fetching tasks by status",
-        error,
+        error: error.message,
       });
     }
   }

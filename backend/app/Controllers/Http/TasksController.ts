@@ -3,6 +3,9 @@ import Task from "App/Models/Task";
 import TaskValidator from "App/Validators/TaskValidator"; // Import the validator
 
 export default class TasksController {
+  /**
+   * Fetch all tasks for the authenticated user.
+   */
   public async fetch({ auth, response }: HttpContextContract) {
     try {
       const user = await auth.authenticate();
@@ -23,6 +26,9 @@ export default class TasksController {
     }
   }
 
+  /**
+   * Insert a new task for the authenticated user.
+   */
   public async insert({ request, auth, response }: HttpContextContract) {
     const user = await auth.authenticate();
     if (!user || !user.id) {
@@ -42,6 +48,9 @@ export default class TasksController {
     }
   }
 
+  /**
+   * Show details of a specific task for the authenticated user.
+   */
   public async show({ params, auth, response }: HttpContextContract) {
     const user = await auth.authenticate();
     if (!user || !user.id) {
@@ -72,6 +81,9 @@ export default class TasksController {
     }
   }
 
+  /**
+   * Update a specific task for the authenticated user.
+   */
   public async update({
     params,
     request,
@@ -87,8 +99,8 @@ export default class TasksController {
       return response.status(400).json({ message: "Task ID is required" });
     }
 
-    // Validate request data
-    const validatedData = await request.validate(TaskValidator);
+    // Validate and extract the task data
+    const taskData = await request.validate(TaskValidator);
 
     try {
       const task = await Task.query()
@@ -97,7 +109,8 @@ export default class TasksController {
         .first();
 
       if (task) {
-        task.merge(validatedData);
+        // Update the task with new data
+        task.merge(taskData);
         await task.save();
         return response.json(task);
       } else {
@@ -111,6 +124,60 @@ export default class TasksController {
     }
   }
 
+  /**
+   * Update the status of a specific task for the authenticated user.
+   */
+  public async updateStatus({
+    params,
+    request,
+    auth,
+    response,
+  }: HttpContextContract) {
+    // Authenticate user
+    const user = await auth.authenticate();
+    if (!user || !user.id) {
+      return response.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Validate task ID
+    if (!params.id) {
+      return response.status(400).json({ message: "Task ID is required" });
+    }
+
+    // Extract status from request
+    const { status } = request.only(["status"]);
+    if (!status) {
+      return response.status(400).json({ message: "Status is required" });
+    }
+
+    try {
+      // Fetch the task associated with the user and ID
+      const task = await Task.query()
+        .where("userId", user.id)
+        .where("id", params.id)
+        .first();
+
+      // Check if the task exists
+      if (task) {
+        // Update task status
+        task.status = status;
+        await task.save();
+        return response.json(task);
+      } else {
+        return response.status(404).json({ message: "Task not found" });
+      }
+    } catch (error) {
+      // Log the error and return a 500 status code
+      console.error("Error updating task status:", error);
+      return response
+        .status(500)
+        .json({ message: "Error updating task status", error: error.message });
+    }
+  }
+
+  /**
+   * Delete a specific task for the authenticated user.
+   */
   public async destroy({ params, auth, response }: HttpContextContract) {
     const user = await auth.authenticate();
     if (!user || !user.id) {
@@ -141,8 +208,9 @@ export default class TasksController {
     }
   }
 
-  // Date filter
-
+  /**
+   * Filter tasks by date for the authenticated user.
+   */
   public async filterByDate({ params, auth, response }: HttpContextContract) {
     const user = await auth.authenticate();
     if (!user || !user.id) {

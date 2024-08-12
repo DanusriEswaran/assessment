@@ -11,10 +11,9 @@
 
       <label>Description:</label>
       <input v-model="task.description" />
-      <!-- <input v-model="task.desc" /> -->
 
       <label>Task Date:</label>
-      <input type="date" v-model="task.date" />
+      <input type="date" v-model="formattedDate" />
 
       <label>Category:</label>
       <select v-model="task.category">
@@ -27,6 +26,12 @@
         </option>
       </select>
 
+      <label>Status:</label>
+      <select v-model="task.status">
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+      </select>
+
       <br />
       <br />
       <button type="submit">Save</button>
@@ -36,7 +41,6 @@
 </template>
 
 <script setup>
-//import { defineProps, defineEmits, ref } from "vue";
 import { defineProps, defineEmits, ref, watch } from "vue";
 import axios from "axios";
 
@@ -52,20 +56,14 @@ const categories = [
   { text: "Teaching", value: "Teaching" },
 ];
 
-// const task = ref({
-//   id: "",
-//   name: "",
-//   desc: "",
-//   date: "",
-//   category: "",
-// });
-
 const task = ref({ ...props.task });
+const formattedDate = ref(formatDate(task.value.date));
 
 watch(
   () => props.task,
   (newTask) => {
     task.value = { ...newTask };
+    formattedDate.value = formatDate(newTask.date);
   },
   { immediate: true }
 );
@@ -78,15 +76,11 @@ function validateForm() {
     console.error("Name is required.");
   }
 
-  // if (!task.value.desc) {
-  //   isValid = false;
-  //   console.error("Description is required.");
-  // }
-
   if (!task.value.description) {
     isValid = false;
     console.error("Description is required");
   }
+
   if (!task.value.date) {
     isValid = false;
     console.error("Task date is required.");
@@ -95,6 +89,11 @@ function validateForm() {
   if (!task.value.category) {
     isValid = false;
     console.error("Category is required.");
+  }
+
+  if (!task.value.status) {
+    isValid = false;
+    console.error("Status is required.");
   }
 
   return isValid;
@@ -127,10 +126,15 @@ async function submitForm() {
         date: formatDate(task.value.date),
       };
 
+      console.log("Task being sent: ", taskData);
       if (task.value.id) {
-        await axios.put(`${apiUrl}/tasks/${task.value.id}`, taskData, config);
+        await axios.put(
+          `${apiUrl}/user/tasks/${task.value.id}`,
+          taskData,
+          config
+        );
       } else {
-        await axios.post(`${apiUrl}/tasks`, task.value, config);
+        await axios.post(`${apiUrl}/user/tasks`, taskData, config);
       }
 
       emit("task-updated");

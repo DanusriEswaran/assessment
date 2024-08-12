@@ -4,15 +4,17 @@
       <v-row>
         <!-- Display Username -->
         <v-col cols="12">
-          <v-alert type="info" class="mb-4">Welcome, {{ username }}</v-alert>
+          <v-alert type="info" class="mb-4" color="rgb(156, 221, 235)">
+            Welcome, {{ username }}
+          </v-alert>
         </v-col>
 
         <!-- Task Table and Date Picker -->
         <v-col cols="12" md="8">
-          <v-card>
+          <v-card class="tasktable">
             <v-card-title>
               <v-spacer></v-spacer>
-              <v-btn @click="openAddTaskForm" color="primary">Add Task</v-btn>
+              <v-btn @click="openAddTaskForm" color="blue">Add Task</v-btn>
             </v-card-title>
 
             <v-data-table
@@ -20,17 +22,34 @@
               :items="paginatedTasks"
               item-key="id"
               class="elevation-1"
+              hide-default-footer
             >
+              <template v-slot:item.name="{ item }">
+                {{ item.name }}
+              </template>
+
+              <template v-slot:item.status="{ item }">
+                <v-icon
+                  @click="toggleTaskStatus(item)"
+                  :color="item.status === 'completed' ? 'green' : 'orange'"
+                  class="pointer"
+                >
+                  <i
+                    :class="
+                      item.status === 'completed'
+                        ? 'bi bi-check-circle'
+                        : 'bi bi-hourglass-split'
+                    "
+                  ></i>
+                </v-icon>
+                <span>{{
+                  item.status === "completed" ? " Completed" : "In Progress"
+                }}</span>
+              </template>
+
               <template v-slot:item.actions="{ item }">
                 <v-icon @click="editTask(item)" class="mr-2">mdi-pencil</v-icon>
                 <v-icon @click="openDeleteConfirm(item.id)">mdi-delete</v-icon>
-              </template>
-              <template v-slot:item.task="{ item }">
-                <v-checkbox
-                  v-model="item.completed"
-                  @change="updateTaskStatus(item)"
-                ></v-checkbox>
-                {{ item.name }}
               </template>
             </v-data-table>
 
@@ -38,25 +57,39 @@
             <nav aria-label="Page navigation example" class="mt-4">
               <ul class="pagination">
                 <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                  <a class="page-link" @click="changePage(currentPage - 1)"
-                    >Previous</a
-                  >
-                </li>
-                <li class="page-item" v-for="page in totalPages" :key="page">
                   <a
                     class="page-link"
-                    :class="{ active: page === currentPage }"
-                    @click="changePage(page)"
+                    href="#"
+                    @click.prevent="changePage(currentPage - 1)"
+                    aria-label="Previous"
                   >
-                    {{ page }}
+                    <span aria-hidden="true">&laquo;</span>
                   </a>
+                </li>
+                <li
+                  v-for="page in totalPages"
+                  :key="page"
+                  class="page-item"
+                  :class="{ active: page === currentPage }"
+                >
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="changePage(page)"
+                    >{{ page }}</a
+                  >
                 </li>
                 <li
                   class="page-item"
                   :class="{ disabled: currentPage === totalPages }"
                 >
-                  <a class="page-link" @click="changePage(currentPage + 1)"
-                    >Next
+                  <a
+                    class="page-link"
+                    href="#"
+                    @click.prevent="changePage(currentPage + 1)"
+                    aria-label="Next"
+                  >
+                    <span aria-hidden="true">&raquo;</span>
                   </a>
                 </li>
               </ul>
@@ -133,15 +166,16 @@ const isEditing = ref(false);
 const selectedTask = ref(null);
 const showDeleteConfirm = ref(false);
 const deleteTaskId = ref(null);
-const selectedDate = ref(new Date()); // Initialize with today's date
+const selectedDate = ref(new Date());
 const showNoTasksDialog = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = 3;
 
 // Define headers for the tasks table
 const tableHeaders = [
-  { text: "Task", value: "task" },
-  { text: "Actions", value: "actions" },
+  { text: "Task Name", value: "name" },
+  { text: "Status", value: "status" },
+  { text: "Actions", value: "actions", align: "end" },
 ];
 
 const paginatedTasks = computed(() => {
@@ -169,14 +203,13 @@ async function fetchUserAndTasks() {
     username.value = userResponse.data.username;
 
     // Fetch tasks
-    const tasksResponse = await axios.get(`${apiUrl}/tasks`, config);
+    const tasksResponse = await axios.get(`${apiUrl}/user/tasks`, config);
     tasks.value = tasksResponse.data;
   } catch (error) {
     console.error("Error fetching user or tasks:", error);
   }
 }
 
-// Fetch tasks by date
 async function fetchTasksByDate(date) {
   try {
     const apiUrl = import.meta.env.VITE_APP_URL;
@@ -187,8 +220,8 @@ async function fetchTasksByDate(date) {
       return;
     }
 
-    // Convert the date to a common format YYYY-MM-DD
-    const formattedDate = formatDateToYMD(date);
+    // Ensure date is a Date object
+    const formattedDate = formatDateToYMD(new Date(date));
 
     const config = {
       headers: {
@@ -196,11 +229,8 @@ async function fetchTasksByDate(date) {
       },
     };
 
-    const url = `${apiUrl}/tasks/date/${formattedDate}`;
-    console.log("Request URL: ", url);
-
+    const url = `${apiUrl}/user/tasks/date/${formattedDate}`;
     const response = await axios.get(url, config);
-    console.log("API Response Data:", response.data);
 
     if (response.status === 200) {
       if (response.data.length === 0) {
@@ -208,7 +238,6 @@ async function fetchTasksByDate(date) {
         showNoTasksDialog.value = true;
       } else {
         tasks.value = response.data;
-        console.log("Task Detail", tasks.value);
         showNoTasksDialog.value = false;
       }
     } else {
@@ -216,7 +245,6 @@ async function fetchTasksByDate(date) {
     }
   } catch (error) {
     if (error.response && error.response.status === 404) {
-      console.error("Tasks endpoint not found for the specified date.");
       tasks.value = [];
       showNoTasksDialog.value = true;
     } else {
@@ -244,13 +272,13 @@ function closeAddTaskForm() {
 function editTask(task) {
   selectedTask.value = {
     ...task,
-    date: formatDateToYMD(task.date), // Format the date for the form input
+    date: task.date ? new Date(task.date) : new Date(), // Ensure date is a Date object
   };
   isEditing.value = true;
   showAddTaskForm.value = true;
 }
 
-async function updateTaskStatus(task) {
+async function toggleTaskStatus(task) {
   try {
     const apiUrl = import.meta.env.VITE_APP_URL;
     const token = localStorage.getItem("authToken");
@@ -259,33 +287,31 @@ async function updateTaskStatus(task) {
         Authorization: `Bearer ${token}`,
       },
     };
-    // Send the updated status to the server if needed
-    await axios.put(
-      `${apiUrl}/tasks/${task.id}`,
-      { completed: task.completed },
-      config
-    );
+
+    // Ensure URL and token are correct
+    const url = `${apiUrl}/user/tasks/${task.id}/status`;
+
+    // Log the URL and token for debugging
+    console.log(`URL: ${url}, Token: ${token}`);
+
+    // Toggle the status in the frontend
+    task.status = task.status === "completed" ? "in-progress" : "completed";
+
+    // Send the updated status to the server
+    await axios.patch(url, { status: task.status }, config);
   } catch (error) {
-    console.error("Error updating task status:", error);
+    console.error("Error toggling task status:", error);
   }
-}
-
-function formatDateToYMD(dateString) {
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function handleDateChange(date) {
-  selectedDate.value = date;
-  fetchTasksByDate(date);
 }
 
 function openDeleteConfirm(taskId) {
   deleteTaskId.value = taskId;
   showDeleteConfirm.value = true;
+}
+
+function closeDeleteConfirm() {
+  deleteTaskId.value = null;
+  showDeleteConfirm.value = false;
 }
 
 async function deleteTask() {
@@ -298,40 +324,76 @@ async function deleteTask() {
       },
     };
 
-    await axios.delete(`${apiUrl}/tasks/${deleteTaskId.value}`, config);
-    tasks.value = tasks.value.filter((task) => task.id !== deleteTaskId.value);
+    await axios.delete(`${apiUrl}/user/tasks/${deleteTaskId.value}`, config);
+    fetchUserAndTasks();
+    closeDeleteConfirm();
   } catch (error) {
     console.error("Error deleting task:", error);
-  } finally {
-    closeDeleteConfirm();
   }
 }
 
-function closeDeleteConfirm() {
-  showDeleteConfirm.value = false;
+function handleDateChange(date) {
+  selectedDate.value = date;
+  fetchTasksByDate(date);
+}
+
+function formatDateToYMD(date) {
+  // Ensure date is a Date object
+  if (!(date instanceof Date)) {
+    date = new Date(date);
+  }
+
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function changePage(page) {
+  if (page > 0 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
 }
 
 function handleNoTasksDialog() {
   showNoTasksDialog.value = false;
 }
 
-function changePage(pageNumber) {
-  if (pageNumber < 1 || pageNumber > totalPages.value) return;
-  currentPage.value = pageNumber;
-}
-
 onMounted(() => {
   fetchUserAndTasks();
 });
 
+// Watch for changes in selectedDate to fetch tasks by date
 watch(selectedDate, (newDate) => {
   fetchTasksByDate(newDate);
 });
 </script>
 
 <style scoped>
-.welcome-alert {
-  background-color: #e3f2fd; /* Light blue background */
-  color: #0d47a1; /* Dark blue text */
+.tasktable {
+  overflow-x: auto;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: #fff;
+}
+
+.pagination .page-link {
+  cursor: pointer;
+}
+
+.page-item.disabled .page-link {
+  cursor: not-allowed;
+}
+
+.page-item.disabled .page-link::after {
+  content: " ";
+  pointer-events: none;
 }
 </style>
